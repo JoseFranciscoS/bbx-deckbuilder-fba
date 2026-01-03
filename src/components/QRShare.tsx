@@ -33,6 +33,7 @@ export default function QRShare({ value, blader, date }: QRShareProps) {
     // Texto arriba
     ctx.fillStyle = '#000000';
     ctx.textAlign = 'center';
+
     ctx.font = 'bold 18px Arial';
     if (blader) ctx.fillText(blader, finalCanvas.width / 2, 28);
 
@@ -41,11 +42,6 @@ export default function QRShare({ value, blader, date }: QRShareProps) {
 
     // Dibujar QR
     ctx.drawImage(qrCanvas, 0, paddingTop);
-
-    // Texto centrado dentro del QR
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.font = 'bold 24px Arial';
-    ctx.fillText('FBA', finalCanvas.width / 2, paddingTop + qrSize / 2 + 8);
 
     return finalCanvas;
   };
@@ -76,7 +72,7 @@ export default function QRShare({ value, blader, date }: QRShareProps) {
 
     pdf.addImage(imgData, 'PNG', 0, 0, finalCanvas.width, finalCanvas.height);
     pdf.autoPrint({ variant: 'non-conform' });
-    window.open(pdf.output('bloburl'), '_blank');
+    window.open(pdf.output('bloburl'), '_blank')?.focus();
   };
 
   return (
@@ -102,3 +98,4 @@ export default function QRShare({ value, blader, date }: QRShareProps) {
     </div>
   );
 }
+
