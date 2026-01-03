@@ -1,4 +1,6 @@
+import * as React from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { jsPDF } from 'jspdf';
 
 interface QRShareProps {
   value: string;
@@ -7,9 +9,11 @@ interface QRShareProps {
 }
 
 export default function QRShare({ value, blader, date }: QRShareProps) {
-  const downloadQR = () => {
-    const qrCanvas = document.querySelector<HTMLCanvasElement>('canvas');
-    if (!qrCanvas) return;
+  const canvasId = 'bbx-qr-canvas';
+
+  const generateFinalCanvas = (): HTMLCanvasElement | null => {
+    const qrCanvas = document.getElementById(canvasId) as HTMLCanvasElement;
+    if (!qrCanvas) return null;
 
     const qrSize = qrCanvas.width;
     const paddingTop = 60;
@@ -20,35 +24,59 @@ export default function QRShare({ value, blader, date }: QRShareProps) {
     finalCanvas.height = qrSize + paddingTop + paddingBottom;
 
     const ctx = finalCanvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) return null;
 
     // Fondo blanco
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
-    // Texto
+    // Texto arriba
     ctx.fillStyle = '#000000';
     ctx.textAlign = 'center';
-
     ctx.font = 'bold 18px Arial';
-    if (blader) {
-      ctx.fillText(blader, finalCanvas.width / 2, 28);
-    }
+    if (blader) ctx.fillText(blader, finalCanvas.width / 2, 28);
 
     ctx.font = '14px Arial';
-    if (date) {
-      ctx.fillText(date, finalCanvas.width / 2, 50);
-    }
+    if (date) ctx.fillText(date, finalCanvas.width / 2, 50);
 
     // Dibujar QR
     ctx.drawImage(qrCanvas, 0, paddingTop);
 
-    // Descargar
+    // Texto centrado dentro del QR
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText('FBA', finalCanvas.width / 2, paddingTop + qrSize / 2 + 8);
+
+    return finalCanvas;
+  };
+
+  const downloadQR = () => {
+    const finalCanvas = generateFinalCanvas();
+    if (!finalCanvas) return;
+
     const pngUrl = finalCanvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = pngUrl;
     link.download = 'bbx-deck-qr.png';
     link.click();
+  };
+
+  const printQR = () => {
+    const finalCanvas = generateFinalCanvas();
+    if (!finalCanvas) return;
+
+    const imgData = finalCanvas.toDataURL('image/png');
+
+    // Crear PDF con jsPDF
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'px',
+      format: [finalCanvas.width, finalCanvas.height],
+    });
+
+    pdf.addImage(imgData, 'PNG', 0, 0, finalCanvas.width, finalCanvas.height);
+    pdf.autoPrint({ variant: 'non-conform' });
+    window.open(pdf.output('bloburl'), '_blank');
   };
 
   return (
@@ -57,12 +85,20 @@ export default function QRShare({ value, blader, date }: QRShareProps) {
       {date && <small>{date}</small>}
 
       <div style={{ marginTop: 10 }}>
-        <QRCodeCanvas value={value} size={220} includeMargin />
+        <QRCodeCanvas id={canvasId} value={value} size={220} includeMargin />
       </div>
 
-      <button onClick={downloadQR} style={{ marginTop: 15 }}>
-        Descargar QR
-      </button>
+      <div
+        style={{
+          marginTop: 15,
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '10px',
+        }}
+      >
+        <button onClick={downloadQR}>Descargar QR</button>
+        <button onClick={printQR}>Imprimir QR</button>
+      </div>
     </div>
   );
 }
